@@ -21,13 +21,12 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 //#define FASTLED_INTERRUPT_RETRY_COUNT 0
-#include "FastLED.h"
-FASTLED_USING_NAMESPACE
+#define FASTLED_USING_NAMESPACE
 
 extern "C" {
 #include "user_interface.h"
 }
-
+#include <FastLED.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h> // Only use it with SSL on MQTT Broker
 #include <EEPROM.h>
@@ -109,6 +108,17 @@ const uint8_t patternCount = ARRAY_SIZE(patterns);
 
 #include "Inits.h"
 
+// function declarations
+void adjustPattern(bool);
+void callback(char*, byte*, unsigned int);
+void reconnectMqtt();
+void setPower(uint8_t);
+void setPattern(int);
+boolean isValidNumber(String);
+String getValue(String, char, int);
+void setSolidColor(uint8_t, uint8_t, uint8_t);
+void setBrightness(int);
+void adjustBrightness(bool);
 
 void setup(void) {
   Serial.begin(115200);
@@ -154,16 +164,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
       b.replace("hallo","");
       Serial.printf("Received R: %s G: %s B: %s", r.c_str(), g.c_str(), b.c_str());
       Serial.println();
-      
+
       if (r.length() > 0 && g.length() > 0 && b.length() > 0) {
         setSolidColor(r.toInt(), g.toInt(), b.toInt());
       }
     }else {
       String command =  getValue(data, ':', 0);
       String value = getValue(data, ':', 1);
-  
+
       if (command.length() > 0) {
-  
+
         if (command.equals("power")) {
           if (isValidNumber(value)) {
             setPower(value.toInt());
@@ -196,8 +206,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
         }
       }
     }
-    
-   
+
+
   }
   Serial.println("Finished Topic Data ...");
 
@@ -277,7 +287,7 @@ void setPower(uint8_t value)
   power = value == 0 ? 0 : 1;
   EEPROM.write(5, power);
   EEPROM.commit();
-  
+
 }
 
 void setSolidColor(CRGB color)
